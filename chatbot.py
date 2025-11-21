@@ -9,6 +9,10 @@ class Chatbot:
     
     def encode_prompt(self, prompt: str):
         return self.tokenizer(prompt, return_tensors="pt")
+    
+    def decode_reply(self, reply_ids: list[int]) -> str:
+        return self.tokenizer.decode(reply_ids, skip_special_tokens=True)
+
 
     
 
