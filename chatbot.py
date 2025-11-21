@@ -26,9 +26,10 @@ class Chatbot:
         input_ids = encoded_input["input_ids"] # get input ids
 
         if self.chat_history_ids is None: # check if this the first prompt
-            model_input = input_ids # if yes, just pass the prompt
+            system_prompt_ids = self.encode_prompt(self.system_prompt)["input_ids"] # if yes, get system prompt tokens
+            model_input = torch.cat([system_prompt_ids, input_ids], dim=1) # pass prompt combined with the system_prompt
         else:
-            model_input = torch.cat([self.chat_history_ids, input_ids], dim=1) # if not, pass prompt combined with chat_history_ids
+            model_input = torch.cat([self.chat_history_ids, input_ids], dim=1) # if not first, pass prompt combined with chat_history_ids
 
         output = self.model.generate( # generate reply 
             model_input,
