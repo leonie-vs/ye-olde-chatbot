@@ -1,4 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
 class Chatbot:
     
@@ -7,6 +8,7 @@ class Chatbot:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
         self.chat_history_ids = None
+        self.system_prompt = "You are a helpful assistant. Respond to the end of this conversation accordingly.\n"
     
     def encode_prompt(self, prompt: str):
         return self.tokenizer(prompt, return_tensors="pt")
@@ -17,21 +19,32 @@ class Chatbot:
     def generate_reply(self, prompt: str) -> str:
         
         prompt = prompt + "\n" # append newline character
-        encoded_prompt = self.encode_prompt(prompt) # encode prompt
-        input_ids = encoded_prompt["input_ids"] # get input ids
+        encoded_input = self.encode_prompt(prompt) # encode prompt
+        input_ids = encoded_input["input_ids"] # get input ids
 
-        output = self.model.generate( # generate reply based on input ids
-            input_ids, 
-            pad_token_id=self.tokenizer.eos_token_id,
+        if self.chat_history_ids is None: # check if this the first prompt
+            model_input = input_ids # if yes, just pass the prompt
+        else:
+            model_input = torch.cat([self.chat_history_ids, input_ids], dim=1) # if not, pass prompt combined with chat_history_ids
+
+        output = self.model.generate( # generate reply 
+            model_input,
             max_new_tokens=20,
+            pad_token_id=self.tokenizer.eos_token_id,
             do_sample=True, 
             temperature=0.9, 
             top_p=0.8, 
             top_k=50
-            )
-        reply_token_ids = output[:, input_ids.shape[-1]:] # get output ids 
+        )
 
-        return str(self.decode_reply(reply_token_ids[0])) # decode reply based on output ids
+        self.chat_history_ids = output # update chat_history_ids
+    
+        reply_start = model_input.shape[-1] 
+        new_tokens = output[:, reply_start:] 
+        reply_token_ids = new_tokens # get reply_token_ids
+        
+        return self.decode_reply(reply_token_ids[0]) # return decoded reply 
+        
 
 
     
