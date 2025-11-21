@@ -10,6 +10,9 @@ class Chatbot:
         self.chat_history_ids = None
         self.system_prompt = "You are a helpful assistant. Respond to the end of this conversation accordingly.\n"
     
+    def reset_history(self):
+        self.chat_history_ids = None
+
     def encode_prompt(self, prompt: str):
         return self.tokenizer(prompt, return_tensors="pt")
     
