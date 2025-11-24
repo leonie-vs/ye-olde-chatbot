@@ -5,8 +5,10 @@ class Chatbot:
     
     def __init__(self):
         self.model_name = "microsoft/DialoGPT-small"
+        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        print(f"Device: {self.device}")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_name).to(self.device)
         self.chat_history_ids = None
         self.system_prompt = "You are a helpful assistant. Respond to the end of this conversation accordingly.\n"
     
@@ -14,7 +16,7 @@ class Chatbot:
         self.chat_history_ids = None
 
     def encode_prompt(self, prompt: str):
-        return self.tokenizer(prompt, return_tensors="pt")["input_ids"]
+        return self.tokenizer(prompt, return_tensors="pt")["input_ids"].to(self.device)
     
     def decode_reply(self, reply_ids: list[int]) -> str:
         return self.tokenizer.decode(reply_ids, skip_special_tokens=True)
@@ -29,6 +31,8 @@ class Chatbot:
             model_input = torch.cat([sys_ids, input_ids], dim=1) # pass prompt combined with system_prompt
         else: # if not first, pass prompt combined with chat_history_ids
             model_input = torch.cat([self.chat_history_ids, input_ids], dim=1)
+        
+        model_input = model_input.to(self.device)
             
         output = self.model.generate( # generate reply 
             model_input,
