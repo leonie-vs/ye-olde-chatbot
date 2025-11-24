@@ -13,8 +13,6 @@ class Chatbot:
         self.system_prompt_ids = self.tokenizer("<|system|>\nYou are a helpful assistant.<|end|>\n", return_tensors="pt")["input_ids"].to(self.device)
         self.chat_history_ids = None
 
-
-    
     def reset_history(self):
         self.chat_history_ids = None
 
@@ -30,8 +28,7 @@ class Chatbot:
         input_ids = self.encode_prompt(prompt) # encode prompt to get input ids
         
         if self.chat_history_ids is None: # check if this is the first prompt
-            sys_ids = self.encode_prompt(self.system_prompt) # if yes, get system prompt ids 
-            model_input = torch.cat([sys_ids, input_ids], dim=1) # pass prompt combined with system_prompt
+            model_input = torch.cat([self.system_prompt_ids, input_ids], dim=1) # pass prompt ids combined with system_prompt ids
         else: # if not first, pass prompt combined with chat_history_ids
             model_input = torch.cat([self.chat_history_ids, input_ids], dim=1)
         
@@ -47,13 +44,14 @@ class Chatbot:
             top_k=50
         )
 
-        reply_start = model_input.shape[-1] 
+        reply_start = model_input.shape[-1] # get input length
         reply_token_ids = output[:, reply_start:]  # get reply_token_ids
-
-        self.chat_history_ids = torch.cat([model_input, reply_token_ids], dim=1) # update chat_history_ids
+        decoded_reply = self.decode_reply(reply_token_ids[0]) # return decoded reply
         
-        return self.decode_reply(reply_token_ids[0]) # return decoded reply 
+        appended_reply_ids = self.encode_prompt(decoded_reply + "<|end|>\n") # add end symbol to reply before encoding
+        self.chat_history_ids = torch.cat([model_input, appended_reply_ids], dim=1) # update chat_history_ids
         
+        return decoded_reply
 
 
     
