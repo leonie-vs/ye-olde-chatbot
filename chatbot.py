@@ -4,7 +4,7 @@ import torch
 class Chatbot:
     
     def __init__(self):
-        self.model_name = "microsoft/DialoGPT-small"
+        self.model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         print(f"Device: {self.device}")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -36,12 +36,12 @@ class Chatbot:
             
         output = self.model.generate( # generate reply 
             model_input,
-            max_new_tokens=50,
+            max_new_tokens=100,
             pad_token_id=self.tokenizer.eos_token_id,
             do_sample=True, 
-            temperature=0.9, 
-            top_p=0.8, 
-            top_k=50
+            temperature=0.8, 
+            top_p=0.9, 
+            top_k=40
         )
 
         reply_start = model_input.shape[-1] 
